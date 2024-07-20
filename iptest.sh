@@ -34,9 +34,9 @@ echo -e "==========================================================="
 # 测试的IP文件(默认ip.txt)
 filename="ip.txt"
 # 扫描端口(默认443)
-port=2096
+port=443
 # 设置curl测试进程数(默认30,最大100)
-tasknum=30
+tasknum=50
 # 是否需要测速[(默认0.否)1.是
 mode=1
 
@@ -114,7 +114,7 @@ fi
 
 function speedtest(){
 rm -rf log.txt speed.txt
-curl --resolve speed.cloudflare.com:$2:$1 https://speed.cloudflare.com:$2/__down?bytes=300000000 -o /dev/null --connect-timeout 2 --max-time 5 -w "HTTPCODE"_%{http_code}"\n"> log.txt 2>&1
+curl --resolve speed.cloudflare.com:$2:$1 https://speed.cloudflare.com:$2/__down?bytes=3000000 -o /dev/null --connect-timeout 2 --max-time 5 -w "HTTPCODE"_%{http_code}"\n"> log.txt 2>&1
 status=$(cat log.txt | grep HTTPCODE | awk -F_ '{print $2}')
 if [ $status == 200 ]
 then
