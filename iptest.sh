@@ -114,7 +114,7 @@ fi
 
 function speedtest(){
 rm -rf log.txt speed.txt
-curl --resolve speed.cloudflare.com:$2:$1 https://speed.cloudflare.com:$2/__down?bytes=3000000 -o /dev/null --connect-timeout 2 --max-time 5 -w "HTTPCODE"_%{http_code}"\n"> log.txt 2>&1
+curl --resolve speed.cloudflare.com:$2:$1 https://speed.cloudflare.com:$2/__down?bytes=300000000 -o /dev/null --connect-timeout 2 --max-time 5 -w "HTTPCODE"_%{http_code}"\n"> log.txt 2>&1
 status=$(cat log.txt | grep HTTPCODE | awk -F_ '{print $2}')
 if [ $status == 200 ]
 then
