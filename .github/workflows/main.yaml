@@ -39,7 +39,7 @@ jobs:
           bash ./iptest.sh -t 100
           python ./df_sorted.py
           python ./create_proxyip.py
-          rm -rf realip*.txt
+          rm -rf realip*.txt oldrealip/ oldcsv/
           rm -rf ip.txt
       - name: Commit files
         run: |
