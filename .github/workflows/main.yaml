@@ -32,7 +32,6 @@ jobs:
         run: |
           rm -rf *.csv 
           wget -O IPDBproxy.txt  https://raw.githubusercontent.com/ymyuuu/IPDB/main/proxy.txt
-          cp ip.txt 
           cat IPDBproxy.txt >> ip.txt 
           rm -rf IPDBproxy.txt
           chmod +x ./iptest.sh
