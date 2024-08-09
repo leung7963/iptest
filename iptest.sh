@@ -22,24 +22,22 @@ echo "==========================================================="
 echo -e "${Font_Red}Usage: bash iptest.sh [option] [argument]"
 echo -e "Options:"
 echo -e "  -f [filename]  Set IP file (default: ip.txt)"
-echo -e "  -p [port]      Set port (default: 443)"
+echo -e "  -p [port]      Set port (default: 443,8443,2096)"
 echo -e "  -t [tasknum]   Set task number (default: 30)"
 echo -e "  -m [mode]      Set mode (default: 1)"
 echo -e "                 0: No speed test"
 echo -e "                 1: Speed test ${Font_Suffix}"
 echo -e "==========================================================="
-echo -e "${Font_Blue}Example: bash iptest.sh -f ip.txt -p 443 -t 30 -m 1 ${Font_Suffix}"
+echo -e "${Font_Blue}Example: bash iptest.sh -f ip.txt -p 443,8443,2096 -t 30 -m 1 ${Font_Suffix}"
 echo -e "==========================================================="
-
 # 测试的IP文件(默认ip.txt)
 filename="ip.txt"
-# 扫描端口(默认443)
-port=443
+# 扫描端口(默认443、8443、2096)
+port="443,8443,2096"
 # 设置curl测试进程数(默认30,最大100)
 tasknum=30
 # 是否需要测速[(默认0.否)1.是
 mode=1
-
 while getopts "f:p:t:m:" arg; do
   case $arg in
     f) filename=$OPTARG ;;
@@ -48,30 +46,20 @@ while getopts "f:p:t:m:" arg; do
     m) mode=$OPTARG ;;
   esac
 done
-
-
-
 echo -e "${Font_Green}测试的IP文件:${Font_Red}$filename"
 echo -e "${Font_Green}扫描端口:${Font_Red}$port"
 echo -e "${Font_Green}设置curl测试进程数:${Font_Red}$tasknum"
 echo -e "${Font_Green}是否需要测速:${Font_Red}$mode\n"
-
-
 seconds=10
 while [ $seconds -gt 0 ]; do
     echo -ne "${Font_Green}>> ${Font_Red}$seconds s${Font_Suffix} ${Font_Green}后开始测试,按 Ctrl+C 退出测试...\r"
     sleep 1
     ((seconds--))
 done
-
 echo -e "${Font_Yellow}倒计时完成！开始测试...${Font_Suffix} "
-
-
-
 function colocation(){
-curl --ipv4 --retry 3 -s https://speed.cloudflare.com/locations | sed -e 's/},{/\n/g' -e 's/\[{//g' -e 's/}]//g' -e 's/"//g' -e 's/,/:/g' | awk -F: '{print $12","$10"-("$2")"}'>colo.txt
+curl --ipv4 --retry 3 -s https://speed.cloudflare.com/locations | sed -e '/},{/\n/g' -e '/\[{//g' -e '/}]//g' -e '/"//g' -e '/,/:/g' | awk -F: '{print $12","$10"-("$2")"}'>colo.txt
 }
-
 function realip(){
 # echo $1
 sparrow=$(curl -A "trace" --resolve cf-ns.com:$port:$1 https://cf-ns.com:$port/cdn-cgi/trace  -s --connect-timeout 2 --max-time 10 | grep "uag")
@@ -82,11 +70,12 @@ then
 	echo $1 >> realip.txt
 fi
 }
-
 function rtt(){
 declare -i ms
 ip=$i
-curl -A "trace" --retry 2 --resolve cf-ns.com:$port:$ip https://cf-ns.com:$port/cdn-cgi/trace -s --connect-timeout 2 --max-time 3 -w "timems="%{time_connect}"\n" >> log/$1
+for p in ${port//,/ }; do
+    curl -A "trace" --retry 2 --resolve cf-ns.com:$p:$ip https://cf-ns.com:$p/cdn-cgi/trace -s --connect-timeout 2 --max-time 3 -w "timems="%{time_connect}"\n" >> log/$1
+done
 status=$(grep uag=trace log/$1 | wc -l)
 if [ $status == 1 ]
 then
@@ -111,22 +100,23 @@ else
 	rm -rf log/$1
 fi
 }
-
 function speedtest(){
 rm -rf log.txt speed.txt
-curl --resolve speed.cloudflare.com:$2:$1 https://speed.cloudflare.com:$2/__down?bytes=300000000 -o /dev/null --connect-timeout 2 --max-time 5 -w "HTTPCODE"_%{http_code}"\n"> log.txt 2>&1
+for p in ${port//,/ }; do
+    curl --resolve speed.cloudflare.com:$p:$1 https://speed.cloudflare.com:$p/__down?bytes=300000000 -o /dev/null --connect-timeout 2 --max-time 5 -w "HTTPCODE"_%{http_code}"\n"> log.txt 2>&1
+done
 status=$(cat log.txt | grep HTTPCODE | awk -F_ '{print $2}')
 if [ $status == 200 ]
 then
 	cat log.txt | tr '\r' '\n' | awk '{print $NF}' | sed '1,3d;$d' | grep -v 'k\|M\|received' >> speed.txt
-	for i in `cat log.txt | tr '\r' '\n' | awk '{print $NF}' | sed '1,3d;$d' | grep k | sed 's/k//g'`
+	for i in `cat log.txt | tr '\r' '\n' | awk '{print $NF}' | sed '1,3d;$d' | grep k | sed '/k//g'`
 	do
 		declare -i k
 		k=$i
 		k=k*1024
 		echo $k >> speed.txt
 	done
-	for i in `cat log.txt | tr '\r' '\n' | awk '{print $NF}' | sed '1,3d;$d' | grep M | sed 's/M//g'`
+	for i in `cat log.txt | tr '\r' '\n' | awk '{print $NF}' | sed '1,3d;$d' | grep M | sed '/M//g'`
 	do
 		i=$(echo | awk '{print '$i'*10 }')
 		declare -i M
@@ -149,7 +139,6 @@ fi
 rm -rf log.txt speed.txt
 echo $max
 }
-
 function cloudflarerealip(){
 rm -rf realip.txt
 declare -i ipnum
@@ -172,7 +161,7 @@ fi
 trap "exec 6>&-; exec 6<&-;exit 0" 2
 tmp_fifofile="./$$.fifo"
 mkfifo $tmp_fifofile &> /dev/null
-if [ ! $? -eq 0 ]
+if [! $? -eq 0 ]
 then
 	mknod $tmp_fifofile p
 fi
@@ -197,9 +186,8 @@ exec 6>&-
 exec 6<&-
 echo "RTT IP全部测试完成"
 }
-
 function cloudflarertt(){
-if [ ! -f "realip.txt" ]
+if [! -f "realip.txt" ]
 then
 	echo "当前没有任何REAL IP"
 else
@@ -225,7 +213,7 @@ else
 	trap "exec 6>&-; exec 6<&-;exit 0" 2
 	tmp_fifofile="./$$.fifo"
 	mkfifo $tmp_fifofile &> /dev/null
-	if [ ! $? -eq 0 ]
+	if [! $? -eq 0 ]
 	then
 		mknod $tmp_fifofile p
 	fi
@@ -252,24 +240,21 @@ else
 	echo "REAL IP全部测试完成"
 fi
 }
-
 publicip=$(curl --ipv4 -s https://cf-ns.com/cdn-cgi/trace | grep ip= | cut -f 2- -d'=')
 #publicip=$(curl --ipv4 -s https://ipv4.gdt.qq.com/get_client_ip)
-
-if [ ! -f "colo.txt" ]
+if [! -f "colo.txt" ]
 then
 	echo "生成colo.txt"
 	colocation
 else
 	echo "colo.txt 已存在,跳过此步骤!"
 fi
-
 start=`date +%s`
 echo "开始检测 $filename REAL IP有效性"
 cloudflarerealip
 echo "开始检测 $filename RTT信息"
 cloudflarertt
-if [ ! -f "rtt.txt" ]
+if [! -f "rtt.txt" ]
 then
 	rm -rf log realip.txt rtt.txt
 	echo "当前没有任何有效IP"
@@ -279,12 +264,12 @@ then
 	speedfile="$timestamp-$filename.csv"
 	cp realip.txt realip-$timestamp.txt
 	echo "中转IP,中转端口,回源IP,国家,数据中心,IP类型,网络延迟,等效带宽,峰值速度">"$speedfile"
-	for i in `cat rtt.txt | sed -e 's/ /_/g'`
+	for i in `cat rtt.txt | sed -e '/ /_/g'`
 	do
 		ip=$(echo $i | awk -F, '{print $1}')
 		port=$(echo $i | awk -F, '{print $2}')
 		clientip=$(echo $i | awk -F, '{print $3}')
-		if [ $clientip != 0.0.0.0 ]
+		if [ $clientip!= 0.0.0.0 ]
 		then
 			echo "正在测试 $ip 端口 $port"
 			maxspeed=$(speedtest $ip $port)
@@ -304,16 +289,16 @@ then
 			maxspeed=null
 			maxbandwidth=null
 		fi
-		if [ $maxspeed != 0 ]
+		if [ $maxspeed!= 0 ]
 		then
-			echo "$i,$maxbandwidth Mbps,$maxspeed kB/s" | sed -e 's/_/ /g'>>"$speedfile"
+			echo "$i,$maxbandwidth Mbps,$maxspeed kB/s" | sed -e '/_/ /g'>>"$speedfile"
 		fi
 	done
 	rm -rf log realip.txt rtt.txt
 	# timestamp=$(date +%s)
     # speedfile=$(echo "$(echo $filename | awk -F. '$timestamp-{print $1}').csv")
 	iconv -f UTF-8 -t GBK "$speedfile" > "$speedfile-gbk.csv"
-    rm -f ./latest.csv
+    rm -f./latest.csv
     cp "$speedfile" latest.csv
     echo -e "${Font_Green}测速文件:${Font_Red}$speedfile"
 else
