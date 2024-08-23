@@ -9,7 +9,7 @@ df['峰值速度数值'] = df['峰值速度'].str.replace(' kB/s', '').astype(fl
 # 按照"峰值速度数值"列的值进行排序
 df_sorted = df.sort_values(by='峰值速度数值', ascending=False)
 
-#df_hk = df_sorted[df_sorted['国家'] == '']
+df_gj = df_sorted[df_sorted['国家'] == 'US']
 
 # 将排序后的DataFrame保存回CSV文件
-df_sorted.to_csv('latest_sorted.csv', index=False)
+df_gj.to_csv('latest_sorted.csv', index=False)
