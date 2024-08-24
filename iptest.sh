@@ -38,7 +38,7 @@ port=443
 # 设置curl测试进程数(默认30,最大100)
 tasknum=30
 # 是否需要测速[(默认0.否)1.是
-mode=1
+mode=0
 
 while getopts "f:p:t:m:" arg; do
   case $arg in
