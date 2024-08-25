@@ -39,6 +39,7 @@ jobs:
           python ./df_sorted.py
           python ./create_proxyip.py
           rm -rf realip*.txt oldrealip/ oldcsv/
+          rm -rf *-ip.txt.csv*
           rm -rf ip.txt
       - name: Commit files
         run: |
