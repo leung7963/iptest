@@ -2,11 +2,8 @@ name: 'GitHub Actions '
 
 on:
   workflow_dispatch:
-  push:
-    branches: 
-      - main
   schedule:
-   - cron: '0 */4 * * *'
+   - cron: '0 0 */1 * *'
 jobs:
   ddy:
     runs-on: ubuntu-latest
