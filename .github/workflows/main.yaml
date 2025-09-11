@@ -30,7 +30,7 @@ jobs:
           rm -rf *.csv 
           wget -O all.txt  https://zip.cm.edu.kg/all.txt
           cat all.txt >> ip.txt 
-          rm -rf IPDBproxy.txt
+          rm -rf all.txt
           chmod +x ./iptest.sh
           bash ./iptest.sh -t 100
           python ./df_sorted.py
