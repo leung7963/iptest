@@ -28,8 +28,8 @@ jobs:
         # timeout-minutes: 360
         run: |
           rm -rf *.csv 
-          wget -O IPDBproxy.txt  https://zip.cm.edu.kg/all.txt
-          cat IPDBproxy.txt >> ip.txt 
+          wget -O all.txt  https://zip.cm.edu.kg/all.txt
+          cat all.txt >> ip.txt 
           rm -rf IPDBproxy.txt
           chmod +x ./iptest.sh
           bash ./iptest.sh -t 100
