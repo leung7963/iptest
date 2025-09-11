@@ -28,7 +28,7 @@ jobs:
         # timeout-minutes: 360
         run: |
           rm -rf *.csv 
-          wget -O all.txt  https://zip.cm.edu.kg/all.txt
+          wget -O all.txt  https://raw.githubusercontent.com/ymyuuu/IPDB/main/proxy.txt
           cat all.txt >> ip.txt 
           rm -rf all.txt
           chmod +x ./iptest.sh
